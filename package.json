@@ -1,0 +1,38 @@
+{
+  "name": "node-red-contrib-loyalty",
+  "version": "1.0.0",
+  "description": "A sample node package for generating campaigns in a company loyalty application",
+  "author": "aeunal",
+  "keywords": [
+    "node-red"
+  ],
+  "node-red": {
+    "nodes": {
+      "create": "Create/create.js",
+      "point": "Point/point.js",
+      "checklist": "Checklist/checklist.js",
+      "checklistbenefit": "ChecklistBenefit/checklistbenefit.js",
+      "checklistlocation": "ChecklistLocation/checklistlocation.js",
+      "barter": "Barter/barter.js",
+      "tiered": "Tiered/tiered.js",
+      "deploy": "Deploy/deploy.js",
+      "generatetier": "GenerateTier/generate.js",
+      "tiermodule": "TierModule/tier.js"
+    }
+  },
+  "dependencies": {
+    "node-red-contrib-barter": "file:Barter",
+    "node-red-contrib-checklist": "file:Checklist",
+    "node-red-contrib-checklistbenefit": "file:ChecklistBenefit",
+    "node-red-contrib-checklistlocation": "file:ChecklistLocation",
+    "node-red-contrib-create": "file:Create",
+    "node-red-contrib-deploy": "file:Deploy",
+    "node-red-contrib-generatetier": "file:GenerateTier",
+    "node-red-contrib-point": "file:Point",
+    "node-red-contrib-tier": "file:TierModule",
+    "node-red-contrib-tiered": "file:Tiered",
+    "node-red-project": "file:C:/Users/aeunal/.node-red",
+    "request": "^2.88.2",
+    "xmlhttprequest": "^1.8.0"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "node-red-contrib-point",
+  "version": "1.0.0",
+  "description": "",
+  "main": "point.js",
+  "author": "",
+  "license": "ISC",
+  "node-red" : {
+    "nodes": {
+        "point": "point.js"
+    }
+  }
+}

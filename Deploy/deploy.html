@@ -1,0 +1,55 @@
+<script type="text/javascript">
+
+    RED.nodes.registerType("deploy",{
+        category: 'General',
+        color: '#3FADB5',
+        defaults: {
+            name: {value:""},
+            debug: {value:false},
+            outputs: {value:0}
+        },
+        inputs:1,
+        outputs:0,
+        icon: "font-awesome/fa-shopping-cart",
+        label: function() {
+            return "Deploy Campaign";
+        },
+        paletteLabel: "Deploy",
+        oneditprepare: function() {
+            var node = this;
+        },
+        oneditsave: function() {
+            var node = this;
+            
+            var check = $("#node-input-debug");
+            var debug_on = check.prop("checked");
+
+            var status_value = 0;
+            if(debug_on) status_value = 1;
+            $("#node-input-outputs").val(status_value);
+
+            
+            //$.ajax({url: "status/"+status_value,type:"GET"}); 
+            //$.getJSON('status/'+status_value, function(data,status,xhr) {});
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="deploy">
+    
+    <input type="hidden" id="node-input-outputs" autocomplete="off" value=0 >
+    <div class="form-row hide">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <input type="checkbox" id="node-input-debug" checked="false" style="display: inline-block; width: auto; vertical-align: top;">
+    <label for="node-input-debug" style="width: auto; display: inline-block; margin-bottom: 5px;"> Output Enable</label> 
+    <!--
+    <a href="#" class="editor-button editor-button-small" id="node-input-increase" style="margin-top:4px; margin-left:123px;"><i class="fa fa-plus"></i> Increase Input</button>
+    <a href="#" class="editor-button editor-button-small" id="node-input-decrease" style="margin-top:4px; margin-left:123px;"><i class="fa fa-minus"></i> Decrease Input</button>
+    -->
+</script>
+
+<script type="text/html" data-help-name="deploy">
+    <p>A simple node that converts the message payloads into all lower-case characters</p>
+</script>

@@ -1,0 +1,13 @@
+{
+  "name": "node-red-contrib-deploy",
+  "version": "1.0.0",
+  "description": "",
+  "main": "deploy.js",
+  "author": "",
+  "license": "ISC",
+  "node-red" : {
+    "nodes": {
+        "deploy": "deploy.js"
+    }
+  }
+}

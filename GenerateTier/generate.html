@@ -1,0 +1,231 @@
+<script type="text/javascript">
+(function() {
+
+    RED.nodes.registerType("generatetier",{
+        category: 'Tier',
+        color: '#cfbba6',
+        defaults: {// validate: boolean function(v)
+            name: {value:""},
+            consumerAge : {value: 'age_def'},
+            consumerFreq : {value: 'freq_def'},
+            partnered: {value: ''},
+            partner: {value: ''},
+            tiered: {value: ''}
+        },
+        credentials: {
+            publickey: {type:"text"}, 
+            privatekey: {type:"password"}
+        },
+        inputs:0,
+        outputs:1,
+        icon: "font-awesome/fa-sign-in",
+        label: function() {
+            return "Generate Tiers";
+        },
+        paletteLabel: "Tier Generate",
+        button: {
+            enabled: function() {
+                return !this.changed
+            },
+            onclick: function() {
+                if (this.changed) {
+                    return RED.notify(RED._("notification.warning", {message:RED._("notification.warnings.undeployedChanges")}),"warning");
+                }
+
+                var label = this._def.label.call(this);
+                if (label.length > 30) {
+                    label = label.substring(0,50)+"...";
+                }
+                label = label.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+                var node = this;
+                $.ajax({
+                    url: "inject/"+this.id,
+                    type:"POST",
+                    success: function(resp) { RED.notify(node._("inject.success",{label:label}),{type:"success",id:"inject"}); },
+                    error: function(jqXHR,textStatus,errorThrown) {
+                        if (jqXHR.status == 404) {
+                            RED.notify(node._("common.notification.error",{message:node._("common.notification.errors.not-deployed")}),"error");
+                        } else if (jqXHR.status == 500) {
+                            RED.notify(node._("common.notification.error",{message:node._("inject.errors.failed")}),"error");
+                        } else if (jqXHR.status == 0) {
+                            RED.notify(node._("common.notification.error",{message:node._("common.notification.errors.no-response")}),"error");
+                        } else {
+                            RED.notify(node._("common.notification.error",{message:node._("common.notification.errors.unexpected",{status:jqXHR.status,message:textStatus})}),"error");
+                        }
+                    }
+                });
+            }
+        },
+        oneditprepare: function() {
+            var node = this;
+             /*
+            $(document).ready(function() { 
+                $('input[type="checkbox"]').click(function() { 
+                    var inputValue = $(this).attr("value"); 
+                    if(inputValue === "partnered") {
+                        //$(".Partner").toggle(); //$("." + inputValue).toggle(); 
+                        $(".Partner").css("display","block")
+                    }
+                }); 
+            });
+            */ 
+
+            const onSelectChange = function() {
+                $(this).css("color", "#000"); 
+            }   
+
+            function populate_company_table(selectedOption) {
+                //if(!$("#node-input-partner option").length) 
+                $.getJSON('apitest/companies', function(data,status,xhr) {
+                    results = data["data"];
+                    //console.log("Populating select", results);
+                    $("#node-input-partner").change(onSelectChange);
+                    if(selectedOption) {
+                        $("#node-input-partner").css("color", "#000"); 
+                        $("#node-input-partner").append($('<option disabled hidden value = "" style="color:gray">Select Partner Company...</option>'));
+                    } else {
+                        $("#node-input-partner").append($('<option disabled selected hidden value = "" style="color:gray">Select Partner Company...</option>'));
+                    }
+                    results.forEach(element => {
+                        var category = element["name"];
+                        var value = category.charAt(0).toUpperCase() + category.slice(1);
+                        if(selectedOption === value || selectedOption === category) {
+                            $("<option selected value='" + category + "' style='color:black'> " + value + "</option>").appendTo("#node-input-partner");
+                        } else {
+                            $("<option value='" + category + "' style='color:black'> " + value + "</option>").appendTo("#node-input-partner");
+                        }
+                    });
+                    
+                });
+            } 
+            populate_company_table(node.partner);
+            
+            
+            var partnered_show = 'none'
+            var tiered_show = 'none'
+            //if(document.getElementById("node-input-partnered").checked) {
+            if(this.partnered) {
+                partnered_show='block';
+            } 
+            if(this.tiered) {
+                tiered_show='block';
+            } 
+            document.getElementById('partner-list').style.display=partnered_show;
+            document.getElementById('tier-list').style.display=tiered_show;
+
+            /*
+            if(this.partner) {
+                console.log(this.partner);
+                //$("#node-input-partner").val(this.partner);
+                $("#node-input-partner option:contains('${this.partner}')").prop("selected",true);
+                
+                //alert(JSON.stringify($("#partner-list option:contains('${this.partner}')")))
+            } 
+            */
+        },
+        oneditsave: function() {
+            
+            var node = this;
+                
+            node.partnered = (document.getElementById("node-input-partnered").checked);
+            node.partner = (document.getElementById("node-input-partner").value);//.toLowerCase();
+            node.tiered = (document.getElementById("node-input-tiered").checked);
+        }
+    });
+    
+})();
+</script>
+
+<script type="text/html" data-template-name="generatetier">
+    <div class="form-row hide">
+        <label for="node-input-name" style="vertical-align:top; width:110px;"><i class="fa fa-tag"></i> Campaign Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name" style="vertical-align:top; width:110px;"><i class="fa fa-user"></i> Public Key</label>
+        <input type="text" id="node-input-publickey" placeholder="KEY">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name" style="vertical-align:top; width:110px;"><i class="fa fa-key"></i> Private Key</label>
+        <input type="password" id="node-input-privatekey" placeholder="KEY">
+    </div>
+
+    <div class="form-row" style="width: 100%; display: table;">
+        <div style="display: table-row">
+            <div style="display: table-cell;"> 
+                <label for="consumer-list" style="vertical-align:top; width:110px;"><i class="fa fa-list"></i> Target Consumer Group</label> 
+            </div>
+            <div style="display: table-cell; padding: 2px;"> 
+                <select id="node-input-consumerAge" style="color:#ccc" onchange="if(this.value === 'age_def')this.style.color = '#ccc'; else this.style.color = '#000'">
+                    <option selected value = "age_def" style="color:gray">No Age Criteria</option> <!--hidden disabled-->
+                    <option value = "age_low" style="color:black">Young</option>
+                    <option value = "age_mid" style="color:black">Middle Age</option>
+                    <option value = "age_high" style="color:black">Elderly</option>
+                </select>
+
+            </div>
+            <div style="display: table-cell; padding: 2px;"> 
+            <select id="node-input-consumerFreq" style="color:#ccc" onchange="if(this.value === 'freq_def')this.style.color = '#ccc'; else this.style.color = '#000'">
+                    <option selected value = "freq_def" style="color:gray">No Shopping Frequency Criteria</option> <!--hidden disabled-->
+                    <option value = "freq_low" style="color:black">Low Frequency</option>
+                    <option value = "freq_mid" style="color:black">Medium Frequency</option>
+                    <option value = "freq_high" style="color:black">High Frequency</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <br>
+    <div class="inline-field hide">
+        <!--<span style="width:110px;display:inline-block;"></span>-->
+        <input type="checkbox" id="node-input-partnered" name="partnered" value="partnered" style="margin-bottom:5px;"
+            onclick="var vis = 'none'; if(this.checked)vis='block'; document.getElementById('partner-list').style.display=vis;">
+        <!-- style="float:left;" -->
+        <label for="node-input-partnered" style="margin-left:10px;display:inline-block;"> This campaign is a partnered program</label>
+    </div>
+    <div id="partner-list" class="Partner form-row hide" style="display: none;">
+        <label for="node-input-partner"><i class="fa fa-list"></i> Choose partner company</label>
+        <select required id="node-input-partner" style="color:#ccc"></select>
+    </div>
+
+    <br>
+    
+    <div class="inline-field hide">
+        <div class="inline-field">
+            <input type="checkbox" id="node-input-tiered" name="tiered" value="tiered" style="margin-bottom:5px;" 
+                onclick="var vis = 'none'; if(this.checked)vis='block'; document.getElementById('tier-list').style.display=vis;">
+            <label for="node-input-tiered" style="margin-left:10px;display:inline-block;"> This campaign is a tiered program</label>
+        </div>
+        <div id = "tier-list"> 
+            <div class="form-row node-input-benefit-container-row" style="margin-bottom:0px; width:100%; min-width:520px">
+                <label style="vertical-align:top; width:110px;"><i class="fa fa-list-alt"></i> Choose Benefits </label>
+                <div style="display:inline-block; width:78%; border:1px solid #ccc; border-radius:5px; box-sizing:border-box;">
+                <div style="width:100%; display: inline-block; background-color:#f3f3f3; padding-top:10px; padding-bottom:10px; border-top:0px solid; border-radius:5px 5px 0 0; border-bottom:1px solid #ccc;">
+                    <div style="display:flex; flex-direction: row;">
+                        <div style="width:32px;"></div>
+                        <div style="flex-grow:1; width:25%; text-align:center; float:left;">Tier</div>
+                        <div style="flex-grow:1; width:15%; text-align:center; float:left;">Point Limit</div>
+                        <div style="flex-grow:1; width:10%; text-align:center; float:left;">Paid Program</div>
+                        <div style="flex-grow:1; width:15%; text-align:center; float:left;">Price of Tier</div>
+                        <div style="width:32px;"></div>
+                    </div>
+                </div>
+                <div id="node-input-benefit-container-div" style=" height:100px; padding:5px; overflow-y:scroll;">
+                    <ol id="node-input-benefit-container" style=" list-style-type:none; margin:0;"></ol>
+                </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <a href="#" class="editor-button editor-button-small" id="node-input-benefit-add-element" style="margin-top:4px; margin-left:123px;"><i class="fa fa-plus"></i> <span>Add new Benefit</span></a>
+            </div>
+        </div>
+    </div>
+
+
+
+    
+</script>
+
+<script type="text/html" data-help-name="generatetier">
+    <p>A simple node that converts the message payloads into all lower-case characters</p>
+</script>

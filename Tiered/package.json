@@ -1,0 +1,13 @@
+{
+  "name": "node-red-contrib-tiered",
+  "version": "1.0.0",
+  "description": "",
+  "main": "tiered.js",
+  "author": "",
+  "license": "ISC",
+  "node-red" : {
+    "nodes": {
+        "tiered": "tiered.js"
+    }
+  }
+}

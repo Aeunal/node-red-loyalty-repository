@@ -1,0 +1,13 @@
+{
+  "name": "node-red-contrib-checklistbenefit",
+  "version": "1.0.0",
+  "description": "",
+  "main": "checklistbenefit.js",
+  "author": "",
+  "license": "ISC",
+  "node-red" : {
+    "nodes": {
+        "checklistbenefit": "checklistbenefit.js"
+    }
+  }
+}

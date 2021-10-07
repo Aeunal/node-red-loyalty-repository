@@ -1,0 +1,13 @@
+{
+  "name": "node-red-contrib-checklistlocation",
+  "version": "1.0.0",
+  "description": "",
+  "main": "checklistlocation.js",
+  "author": "",
+  "license": "ISC",
+  "node-red" : {
+    "nodes": {
+        "checklistlocation": "checklistlocation.js"
+    }
+  }
+}

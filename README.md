@@ -1,2 +1,4 @@
-# node-red-loyalty-repository
-Custom nodes for node-red for a loyalty campaign project, prepared for deployment on Heroku framework.
+# adesso-loyalty-custom-nodes
+
+Custom Node-red nodes for an adesso loyalty program project.
+ 

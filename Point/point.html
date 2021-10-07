@@ -1,0 +1,316 @@
+<script type="text/javascript">
+(function() {
+
+    const productDefault = [
+        {
+            'name': 'chips',
+            'buy':120,
+            'sell':80
+        },
+        {
+            'name': "soda",
+            'buy':45,
+            'sell':25
+        }
+    ];
+
+    var product_array = [];
+    $.getJSON('apitest/items', function(data,status,xhr) {
+        var results = data["data"];
+        results.forEach(element => product_array.push({"name": element.name, "buy":150, "sell":100}));
+        //console.log("BARTER: Got products.");
+    });
+
+    function overwrite(original_array, modify_array) {
+        var new_array = [];
+        for( var i = 0; i < original_array.length; i++) {
+            var original_element = original_array[i];
+            var new_element = {"name":original_element.name, "buy": original_element.buy, "sell": original_element.sell};
+            
+            for( var j = 0; j < modify_array.length; j++) {
+                var modify_element = modify_array[j];
+
+                if(new_element.name === modify_element.name) {
+                    if(modify_element.buy) new_element.buy = modify_element.buy;
+                    if(modify_element.sell) new_element.sell = modify_element.sell;
+                    break;
+                }
+            }
+            new_array.push(new_element);
+        }
+        return new_array;
+    }
+
+    const contextPrefix = "node-input-product";
+    function rowHandleClass(prefix) { return prefix + "-handle";}
+    function elementFieldClass(prefix) { return prefix + "-product";}
+    function valueFieldClass(prefix) { return prefix + "value";}
+    function valueTypeFieldClass(prefix) { return prefix + "-valueType";}
+    function nameFieldClass(prefix) { return prefix + "-name";}
+    function inputErrorClass(prefix) { return prefix + "input-error";}
+    function editContainerId(prefix) { return "#" + prefix + "-container";}
+    function addToContainer(prefix) { return "#" + prefix + "-add-product";}
+
+    const onSelectChange = function() {
+        $(this).css("color", "#000"); 
+    }  
+    
+    RED.nodes.registerType("point",{
+        category: 'Campaign',
+        color: '#a4cbde',
+        defaults: {
+            name: {value:""},
+            expiration: {value: ''},    
+            product: {
+                required:true,
+                // TODO: switch to object sorted by value
+                value: productDefault,
+                validate: function(validate) { if (!validate) return false; return true; }
+            }
+        },
+        inputs:1,
+        outputs:1,
+        icon: "font-awesome/fa-money",
+        label: function() {
+            return "Point Component";
+        },
+        paletteLabel: "Point",
+        oneditprepare: function() {
+            var node = this;
+
+            const fieldKeyUpValidateNotEmpty = function() {
+                prefix = contextPrefix;
+                var value = $(this).val();  
+                if (value && $(this).hasClass(inputErrorClass(prefix))) {
+                    $(this).removeClass(inputErrorClass(prefix))
+                } else {
+                    if (!value) {
+                        $(this).addClass(inputErrorClass(prefix))
+                    }
+                }
+            } 
+
+            function generateValueFormRow(prefix ,index, value) {
+                var requiredFieldClasses = [];  
+                const containerId = 'ValueFormRow-' + index
+                const elementByClassInContainer = (elementClass) => { return "#" + containerId + " ." + elementClass };   
+                var container = $('<li id="' + prefix + "-" + containerId + '" />',{style:"background: #fff; margin:0; padding:8px 0px 0px; border-bottom: 1px solid #ccc;"});
+
+                var row = $('<div/>', {
+                    style: "width: 100%; display: flex; flex-direction: row; align-items: center; padding-bottom: 8px;"
+                }).appendTo(container); 
+
+                $('<i/>', {
+                    class: rowHandleClass(prefix) + ' fa fa-bars',
+                    style: "color: #eee; cursor: move; margin-left: 3px;"
+                }).appendTo(row);   
+
+                var label_value = value.name.charAt(0).toUpperCase() + value.name.slice(1);
+                console.log("Value:", value.value);
+                var productSelect = $('<label/>', {
+                    class: "product-label",
+                    text: label_value,
+                    style:"width:40%; margin-left:10px; font-weight:bold;",
+                    required:true
+                }).appendTo(row);
+                //fillProductSelect(productSelect, value.name);
+
+                var buyField = $('<input/>', {
+                    class: "product-buy",
+                    type: "number",
+                    style: "width:20%; margin-left:10px;",
+                    placeholder: 'Point',
+                    required: true,
+                    value: value.buy
+                }).appendTo(row);
+
+                var sellField = $('<input/>', {
+                    class: "product-sell",
+                    type: "number",
+                    style: "width:20%; margin-left:10px;",
+                    placeholder: 'Point',
+                    required: true,
+                    value: value.sell
+                }).appendTo(row);
+
+                requiredFieldClasses.push(elementFieldClass(prefix)); 
+                buyField.keyup(fieldKeyUpValidateNotEmpty);   
+                sellField.keyup(fieldKeyUpValidateNotEmpty);   
+
+                var deleteButton = $('<a/>',
+                {
+                    href: "#",
+                    class: "editor-button editor-button-small",
+                    style: "margin-left:13px; width: 20px; margin-right: 10px; right: 0px"
+                }).appendTo(row);   
+
+                $('<i/>',
+                {
+                    class: "fa fa-remove",
+                    style: ""
+                }).appendTo(deleteButton);  
+
+                deleteButton.click(function() {
+                    for (var requiredIndex = 0; requiredIndex < requiredFieldClasses.length; requiredIndex ++) {
+                        container.find("." + requiredFieldClasses[requiredIndex]).removeAttr('required')
+                    }
+                    container.css( { "background": "#fee" } );
+                    container.fadeOut(200, function() {
+                        $(this).remove();
+                    });
+                }); 
+
+                $(editContainerId(prefix)).append(container);
+            }  
+
+            /*
+            function makeOnClick(prefix) {
+                $(addToContainer(prefix)).click(function() {
+                    generateValueFormRow(prefix, $(editContainerId(prefix)).children().length + 1, {});
+                    $(editContainerId(prefix)).scrollTop($(editContainerId(prefix)).get(0).scrollHeight);
+                }); 
+            }
+            */
+
+            function makeSortable(prefix) {
+                $(editContainerId(prefix)).sortable({
+                    axis: "y",
+                    handle: "." + rowHandleClass(prefix),
+                    cursor: "move"
+                });
+            }
+
+            function setMethods(prefix, values) {
+                //makeOnClick(prefix);
+                for (var index = 0; index < values.length; index ++) {
+                    var rowValue = values[index];
+                    generateValueFormRow(prefix, index + 1, rowValue);
+                } 
+                makeSortable(prefix);
+            }
+            
+            if (!this.product) {
+                this.product = productDefault;
+            }   
+
+            console.log(this.product);
+            var values = overwrite(product_array, this.product);
+            console.log(values);
+            setMethods(contextPrefix, values);
+
+        },
+        oneditsave: function() {
+            var node = this;
+
+            var productsElement = $(editContainerId(contextPrefix)).children();
+            node.product = [];
+            productsElement.each(function(i) {
+                var element = $(this);
+                var name = element.find(".product-label").html().toLowerCase();
+                var buy = element.find(".product-buy" ).val();
+                var sell = element.find(".product-sell" ).val();
+                
+                var settings = {
+                    name: name,
+                    buy: buy,
+                    sell: sell
+                };
+                node.product.push(settings);
+            });
+        }
+    });
+})();
+</script>
+
+<script type="text/html" data-template-name="point">
+    <style>
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 30px;
+            height: 18px;
+        }
+
+        .switch input {display:none;}
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 15px;
+            width: 15px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        input:checked + .slider {
+            background-color: #910000;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(11px);
+            -ms-transform: translateX(11px);
+            transform: translateX(11px);
+        }
+
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+    </style>
+
+    <div class="form-row hide">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+
+   
+    <div class="form-row node-input-product-container-row" style="margin-bottom:0px; width:100%; min-width:520px">
+        <label style="vertical-align:top; width:110px;"><i class="fa fa-list-alt"></i> Set Points of Products </label>
+        <div style="display:inline-block; width:78%; border:1px solid #ccc; border-radius:5px; box-sizing:border-box;">
+          <div style="width:100%; display: inline-block; background-color:#f3f3f3; padding-top:10px; padding-bottom:10px; border-top:0px solid; border-radius:5px 5px 0 0; border-bottom:1px solid #ccc;">
+              <div style="display:flex; flex-direction: row;">
+                <div style="width:32px;"></div>
+                <div style="flex-grow:1; text-align:center; float:left; width:25%">Product</div>
+                <div style="flex-grow:1; text-align:center; float:left;">Buy-Points</div>
+                <div style="flex-grow:1; text-align:center; float:left;">Sell-Points</div>
+                <div style="width:32px;"></div>
+              </div>
+          </div>
+          <div id="node-input-product-container-div" style=" height:450px; padding:5px; overflow-y:scroll;">
+            <ol id="node-input-product-container" style=" list-style-type:none; margin:0;"></ol>
+          </div>
+        </div>
+    </div>
+
+    <div class="inline-field hide">
+        <input type="checkbox" id="node-input-expiration" name="expiration" value="close_expiration" style="float:left;"> 
+        <label for="node-input-expiration" style="margin-left:20px;"> Choose product with close expiration dates</label>
+    </div>
+</script> 
+
+<script type="text/html" data-help-name="point">
+    <p>A simple node that converts the message payloads into all lower-case characters</p>
+</script>

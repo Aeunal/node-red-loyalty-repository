@@ -1,0 +1,13 @@
+{
+  "name": "node-red-contrib-checklist",
+  "version": "1.0.0",
+  "description": "",
+  "main": "checklist.js",
+  "author": "",
+  "license": "ISC",
+  "node-red" : {
+    "nodes": {
+        "checklist": "checklist.js"
+    }
+  }
+}

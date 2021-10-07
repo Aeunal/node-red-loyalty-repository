@@ -1,0 +1,13 @@
+{
+  "name": "node-red-contrib-tier",
+  "version": "1.0.0",
+  "description": "",
+  "main": "tier.js",
+  "author": "",
+  "license": "ISC",
+  "node-red" : {
+    "nodes": {
+        "tier": "tier.js"
+    }
+  }
+}

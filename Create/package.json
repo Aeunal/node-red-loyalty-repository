@@ -1,0 +1,13 @@
+{
+  "name": "node-red-contrib-create",
+  "version": "1.0.0",
+  "description": "",
+  "main": "create.js",
+  "author": "",
+  "license": "ISC",
+  "node-red" : {
+    "nodes": {
+        "create": "create.js"
+    }
+  }
+}

@@ -1,0 +1,363 @@
+<script type="text/javascript">
+(function() {
+    const taskDefault = [
+        {
+            'name': 'chips',
+            'amount':1,
+        },
+        {
+            'name': "soda",
+            'amount':3,
+        }
+    ];
+
+    /*
+    const benefitDefault = [
+        {
+            'name':'cola',
+            'amount':1
+        },
+        {
+            'name':"milk biscuit",
+            'amount':1
+        }
+    ] 
+    */
+
+    //const get_color = function() {
+    //    if(this.label_data) return '#a8bdeb';
+    //    return '#a6bbdf';
+    //}
+
+    const label_default = "Checklist Task";
+
+    const get_label = function() {
+        //if(this.label_data) return this.label_data;
+        return label_default; // this.label_data ||
+    }
+    
+    const contextPrefix = "node-input-task";   
+    const benefitPrefix = "node-input-benefit";   
+    function rowHandleClass(prefix) { return prefix + "-handle";}
+    function elementFieldClass(prefix) { return prefix + "-element";}
+    function valueFieldClass(prefix) { return prefix + "value";}
+    function valueTypeFieldClass(prefix) { return prefix + "-valueType";}
+    function nameFieldClass(prefix) { return prefix + "-name";}
+    function inputErrorClass(prefix) { return prefix + "input-error";}
+    function editContainerId(prefix) { return "#" + prefix + "-container";}
+    function addToContainer(prefix) { return "#" + prefix + "-add-item";}
+
+    const onSelectChange = function() {
+        $(this).css("color", "#000"); 
+    } 
+
+    RED.nodes.registerType("checklist",{
+        category: 'Checklist',
+        color: '#a8bddd',
+        defaults: {
+            name: {value:""},
+            //chain: {value: ""},
+            //checklist: {value: ""},
+            //unordered: {value: ""},
+            task: {value: taskDefault},
+            //benefit: {value: benefitDefault},
+            //label_data: {value: ""}
+        },
+        inputs:1,
+        outputs:1,
+        icon: "font-awesome/fa-th-list",
+        label: get_label,
+        paletteLabel: "Checklist Task",
+        oneditprepare: function() {
+            var node = this;
+
+            /*
+            var checklist_show = 'none'
+            if(node.chain) {
+                checklist_show='block';
+            } 
+            document.getElementById('node-input-checklist').style.display=checklist_show;
+
+            
+            var unordered_text = 'Ordered'
+            if(node.unordered) {
+                unordered_text='Unordered';
+            } 
+            document.getElementById('unordered-text').innerHTML=unordered_text;
+            */
+
+            function fillItemSelect(element, selected_val) {
+                $.getJSON('apitest/items', function(data,status,xhr) {
+                    results = data["data"];
+                    //console.log("Results:",results);
+                    var value_override = false;
+                    element.change(onSelectChange);
+                    element.append($('<option selected disabled hidden value = "" style="color:gray">Select Item...</option>'));
+                    selected_param = " ";
+                    if (selected_val == 'point') {
+                        value_override = true;
+                        selected_param = " selected='selected' ";
+                    }
+                    element.append($('<option value = "point" '+selected_param+' style="color:black">Points</option>'));
+                    for (i = 0; i < results.length; i++) {
+                        var category = results[i]["name"];
+                        selected_param = " ";
+                        if (category == selected_val) {
+                            value_override = true;
+                            selected_param = " selected='selected' ";
+                        }
+                        var option = $("<option value='" + category + "' "+selected_param+" style='color:black'> " + category.charAt(0).toUpperCase() + category.slice(1) + "</option>"); //.appendTo("#item-list");
+                        element.append(option);
+                    }
+                    if(value_override) {
+                        element.change();
+                    }
+                });
+            }
+
+            const fieldKeyUpValidateNotEmpty = function() {
+                prefix = contextPrefix;
+                var value = $(this).val();  
+                if (value && $(this).hasClass(inputErrorClass(prefix))) {
+                    $(this).removeClass(inputErrorClass(prefix))
+                } else {
+                    if (!value) {
+                        $(this).addClass(inputErrorClass(prefix))
+                    }
+                }
+            }   
+
+
+            function generateValueFormRow(prefix ,index, value) {
+
+                var requiredFieldClasses = [];  
+                const containerId = 'ValueFormRow-' + index
+                const elementByClassInContainer = (elementClass) => { return "#" + containerId + " ." + elementClass };   
+                var container = $('<li id="' + prefix + "-" + containerId + '" />',{style:"background: #fff; margin:0; padding:8px 0px 0px; border-bottom: 1px solid #ccc;"});
+                
+                var row = $('<div/>', {
+                    style: "width: 100%; display: flex; flex-direction: row; align-items: center; padding-bottom: 8px;"
+                }).appendTo(container); 
+
+                $('<i/>', {
+                    class: rowHandleClass(prefix) + ' fa fa-bars',
+                    style: "color: #eee; cursor: move; margin-left: 3px;"
+                }).appendTo(row);   
+
+                //console.log("Value:", value.value);
+                var itemSelect = $('<select/>', {
+                    class: "item-list",
+                    name:"item-list",
+                    id:"item-list",
+                    style:"color:#ccc; margin-left:10px;",
+                    required:true
+                }).appendTo(row);
+                fillItemSelect(itemSelect, value.name);
+                
+                var amountField = $('<input/>', {
+                    class: "item-amount",
+                    type: "number",
+                    style: "width:25%; margin-left:10px;",
+                    placeholder: 'Amount',
+                    required: true,
+                    value: value.amount
+                }).appendTo(row);   
+                
+                requiredFieldClasses.push(elementFieldClass(prefix)); 
+                amountField.keyup(fieldKeyUpValidateNotEmpty);    
+                itemSelect.keyup(fieldKeyUpValidateNotEmpty);    
+                
+                var deleteButton = $('<a/>',
+                {
+                    href: "#",
+                    class: "editor-button editor-button-small",
+                    style: "margin-left:13px; width: 20px; margin-right: 10px; right: 0px"
+                }).appendTo(row);   
+                
+                $('<i/>',
+                {
+                    class: "fa fa-remove",
+                    style: ""
+                }).appendTo(deleteButton);  
+
+                deleteButton.click(function() {
+                    for (var requiredIndex = 0; requiredIndex < requiredFieldClasses.length; requiredIndex ++) {
+                        container.find("." + requiredFieldClasses[requiredIndex]).removeAttr('required')
+                    }
+                    container.css( { "background": "#fee" } );
+                    container.fadeOut(200, function() {
+                        $(this).remove();
+                    });
+                }); 
+
+                $(editContainerId(prefix)).append(container);
+            }   
+
+
+            function makeOnClick(prefix) {
+                $(addToContainer(prefix)).click(function() {
+                    generateValueFormRow(prefix, $(editContainerId(prefix)).children().length + 1, {});
+                    $(editContainerId(prefix)).scrollTop($(editContainerId(prefix)).get(0).scrollHeight);
+                }); 
+            }
+
+            function makeSortable(prefix) {
+                $(editContainerId(prefix)).sortable({
+                    axis: "y",
+                    handle: "." + rowHandleClass(prefix),
+                    cursor: "move"
+                });
+            }
+
+            function setMethods(prefix, values) {
+                makeOnClick(prefix);
+                for (var index = 0; index < values.length; index ++) {
+                    var rowValue = values[index];
+                    generateValueFormRow(prefix, index + 1, rowValue);
+                } 
+                makeSortable(prefix);
+            }
+            
+            if (!this.task) {
+                this.task = taskDefault;
+            }   
+            /*
+            if (!this.benefit) {
+                this.benefit = benefitDefault;
+            } 
+            */  
+
+            setMethods(contextPrefix, this.task);
+            //setMethods(benefitPrefix, this.benefit);
+            
+        },
+        oneditsave: function() {
+            var node = this;
+
+            /*
+            label_text = label_default;
+            chain_head = document.getElementById("node-input-chain").checked;
+            if(chain_head) {
+                checklist_text = document.getElementById("node-input-checklist").value;
+                if(checklist_text) {
+                    label_text = checklist_text + " Checklist Task";
+                }
+            }
+            node.label_data = label_text;
+
+
+            node.chain = (document.getElementById("node-input-chain").checked);
+            node.checklist = (document.getElementById("node-input-checklist").value);
+
+            node.unordered = (document.getElementById("node-input-unordered").checked);
+            */
+
+            var tasksElement = $(editContainerId(contextPrefix)).children();
+            node.task = [];
+            tasksElement.each(function(i) {
+                var element = $(this);
+                var name = element.find(".item-list").val();
+                var amount = element.find(".item-amount").val();
+                var settings = {
+                    name: name,
+                    amount: amount
+                };
+                node.task.push(settings);
+            });
+
+            /*
+            var benefitsElement = $(editContainerId(benefitPrefix)).children();
+            node.benefit = [];
+            benefitsElement.each(function(i) {
+                var element = $(this);
+                var name = element.find(".item-list").val();
+                var amount = element.find(".item-amount").val();
+                var settings = {
+                    name: name,
+                    amount: amount
+                };
+                node.benefit.push(settings);
+            });
+            */
+           
+        }
+    });
+})();
+</script>
+
+<script type="text/html" data-template-name="checklist">
+    <div class="form-row hide">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+
+    <!-- style="float:left;"> -->
+    <!--
+    <br>
+    <div class="inline-field" style="vertical-align:top; ">
+        <span style="vertical-align:top;width:110px;display:inline-block"><i class="fa fa-plus-square"></i> Start New Checklist Chain </span>
+        <input type="checkbox" id="node-input-chain" data-toggle="toggle"
+        onclick="var vis = 'none'; if(this.checked)vis='inline-block'; document.getElementById('node-input-checklist').style.display=vis;">
+        <div class="inline-field" style="vertical-align:top; margin-left:4px; display:inline-block;">
+            <input id="node-input-checklist" for="node-input-chain" style="display:none;" type="text" placeholder="Checklist Name">
+        </div>
+    </div>
+    <br>
+    <div class="inline-field" style="vertical-align:top; ">
+        <span style="width:110px;display:inline-block"><i class="fa fa-sort"></i> Logic   </span>
+        <input type="checkbox" id="node-input-unordered" data-toggle="toggle" style="margin-bottom: 5px;" 
+            onclick="var order_text='Ordered';if(this.checked)order_text='Unordered';document.getElementById('unordered-text').innerHTML=order_text;">
+        <label id="unordered-text" for="node-input-unordered" style="margin-left:20px;display:inline-block"> Unordered </label>
+    </div>
+    <br>
+    -->
+
+    <div class="form-row node-input-task-container-row" style="margin-bottom:0px; width:100%; min-width:520px">
+        <label style="vertical-align:top; width:110px;"><i class="fa fa-list-alt"></i> Choose Tasks </label>
+        <div style="display:inline-block; width:78%; border:1px solid #ccc; border-radius:5px; box-sizing:border-box;">
+          <div style="width:100%; display: inline-block; background-color:#f3f3f3; padding-top:10px; padding-bottom:10px; border-top:0px solid; border-radius:5px 5px 0 0; border-bottom:1px solid #ccc;">
+              <div style="display:flex; flex-direction: row;">
+                <div style="width:32px;"></div>
+                <div style="flex-grow:1; text-align:center; float:left;">Product</div>
+                <div style="flex-grow:1; text-align:center; float:left;">Amount</div>
+                <!-- <div style="flex-grow:1; text-align:center; float:left;">Location</div> -->
+                <div style="width:32px;"></div>
+              </div>
+          </div>
+          <div id="node-input-task-container-div" style=" height:200px; padding:5px; overflow-y:scroll;">
+            <ol id="node-input-task-container" style=" list-style-type:none; margin:0;"></ol>
+          </div>
+        </div>
+    </div>
+    <div class="form-row">
+        <a href="#" class="editor-button editor-button-small" id="node-input-task-add-item" style="margin-top:4px; margin-left:123px;"><i class="fa fa-plus"></i> <span>Add new Task</span></a>
+    </div>
+
+    <br>
+    <!--
+    <div class="form-row node-input-benefit-container-row" style="margin-bottom:0px; width:100%; min-width:520px">
+        <label style="vertical-align:top; width:110px;"><i class="fa fa-list-alt"></i> Choose Benefits </label>
+        <div style="display:inline-block; width:78%; border:1px solid #ccc; border-radius:5px; box-sizing:border-box;">
+          <div style="width:100%; display: inline-block; background-color:#f3f3f3; padding-top:10px; padding-bottom:10px; border-top:0px solid; border-radius:5px 5px 0 0; border-bottom:1px solid #ccc;">
+              <div style="display:flex; flex-direction: row;">
+                <div style="width:32px;"></div>
+                <div style="flex-grow:1; text-align:center; float:left;">Benefit</div>
+                <div style="flex-grow:1; text-align:center; float:left;">Amount</div>
+                <div style="width:32px;"></div>
+              </div>
+          </div>
+          <div id="node-input-benefit-container-div" style=" height:200px; padding:5px; overflow-y:scroll;">
+            <ol id="node-input-benefit-container" style=" list-style-type:none; margin:0;"></ol>
+          </div>
+        </div>
+    </div>
+    <div class="form-row">
+        <a href="#" class="editor-button editor-button-small" id="node-input-benefit-add-item" style="margin-top:4px; margin-left:123px;"><i class="fa fa-plus"></i> <span>Add new Benefit</span></a>
+    </div>
+    -->
+
+</script>
+
+<script type="text/html" data-help-name="checklist">
+    <p>A simple node that converts the message payloads into all lower-case characters</p>
+</script>
